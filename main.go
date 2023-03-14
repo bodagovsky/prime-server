@@ -1,12 +1,30 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
-	"testTask/handlers"
+	
+	"primeServer/internal/pkg/handlers"
+
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 )
+
+var port = "8080"
+
+func init() {
+	flag.String("port", port, "port for server to listen on")
+
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	pflag.Parse()
+	viper.BindPFlags(pflag.CommandLine)
+
+	providedPort := viper.GetString("port")
+	port = ":" + providedPort
+}
 
 func main() {
 
@@ -16,7 +34,9 @@ func main() {
 
 	signal.Notify(shutdown, os.Interrupt)
 
-	server := http.Server{}
+	server := http.Server{
+		Addr: port,
+	}
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil {
