@@ -9,7 +9,7 @@ import (
 
 	"primeServer/internal/errors"
 	"primeServer/internal/helpers"
-	ops "primeServer/internal/math"
+	ops "primeServer/pkg/math"
 )
 
 const (
@@ -69,10 +69,10 @@ func PrimeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if contentLength > MAX_BODY_LENGTH {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(PrimeIncomingErrorResponse{
+		header = http.StatusBadRequest
+		response = PrimeIncomingErrorResponse{
 			Error: errors.ErrBodyTooLarge.Error(),
-		})
+		}
 		return
 	}
 
@@ -88,7 +88,6 @@ func PrimeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	nums, idx, err := helpers.ConvertToNums(reqIn)
-
 	if err != nil {
 		header = http.StatusBadRequest
 		response = PrimeIncomingErrorResponse{
@@ -97,20 +96,19 @@ func PrimeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var resp []bool
+	response = performCalculations(nums)
+}
+
+func performCalculations(nums []float64) PrimeIncomingResponse {
 	if len(nums) >= BIG_INPUT {
-		//run in parallel
-		resp = extractPrimes(nums)
-	} else {
-		resp = extractPrimesSequantially(nums)
+		return extractPrimes(nums)
 	}
 
-	// err = json.NewEncoder(w).Encode(resp)
-	response = resp
+	return extractPrimesSequantially(nums)
 }
 
 //extractPrimesSequantially returns slice of boolean results of IsPrime func for each number in nums
-func extractPrimesSequantially(nums []float64) []bool {
+func extractPrimesSequantially(nums []float64) PrimeIncomingResponse {
 	response := make([]bool, len(nums))
 
 	for idx, num := range nums {
@@ -121,22 +119,18 @@ func extractPrimesSequantially(nums []float64) []bool {
 }
 
 //extractPrimes does exactly the same as extractPrimesSequantially, but in parallel spawning MAX_WORKERS goroutines
-func extractPrimes(nums []float64) []bool {
+func extractPrimes(nums []float64) PrimeIncomingResponse {
 	buffer := make(chan bool, MAX_WORKERS)
 	wg := &sync.WaitGroup{}
 
 	response := make([]bool, len(nums))
-	mu := sync.Mutex{}
 
 	for numIdx, num := range nums {
 		wg.Add(1)
 		buffer <- true
 		go func(index int, number float64) {
 			defer wg.Done()
-
-			mu.Lock()
 			response[index] = ops.IsPrime(number)
-			mu.Unlock()
 			<-buffer
 		}(numIdx, num)
 	}

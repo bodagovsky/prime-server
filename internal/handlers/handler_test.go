@@ -5,7 +5,7 @@ import (
 
 	"primeServer/internal/errors"
 	"primeServer/internal/helpers"
-	ops "primeServer/internal/math"
+	ops "primeServer/pkg/math"
 
 	"github.com/stretchr/testify/assert"
 )

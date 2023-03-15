@@ -7,7 +7,7 @@ import (
 	"os"
 	"os/signal"
 	
-	"primeServer/internal/pkg/handlers"
+	"primeServer/internal/handlers"
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
